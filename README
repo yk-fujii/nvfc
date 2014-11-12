@@ -1,0 +1,140 @@
+#
+# NVFC - NVidia microcontroller Firmware Compiler
+# 
+# README
+# 
+# Copyright (C) 2012 Yusuke Fujii <yukke@ubi.cs.ritsumei.ac.jp>
+# Copyright (C) 2011-2012 Shinpei Kato
+# 
+#  
+#
+
+The following instruction will tell you how to install Farm. Some of 
+the installation stages may require you to install additional tools 
+and packages.
+$(TOPDIR) will represent your top working directory, henceforth.
+
+1. Download
+
+cd $(TOPDIR)
+git clone git://0x04.net/envytools.git
+git clone git://github.com/yukke0826/nvfc.git
+git clone git://github.com/shinpei0208/gdev.git
+
+2. envytools
+
+envytools is a rich set of open-source tools to compile or decompile
+NVIDIA GPU program code, firmware code, macro code, and so on. It is
+also used to generate C header files with GPU command definitions.
+In addition, envytools document the NVIDIA GPU architecture details,
+while are not disclosed to the public so far. If you are interested 
+in GPU system software development, this is what you should read!
+Please follow the instruction below to install envytools.
+
+cd $(TOPDIR)/envytools
+mkdir build
+cd build
+cmake .. # may require some packages on your distro
+make
+sudo make install # will install tools to /usr/local/{bin,lib}
+
+3. NVFC install
+
+
+cd $(TOPDIR)/nvfc/compiler
+mkdir build
+cd build
+../llvm/configure # if can't finished configure, add option.
+make
+sudo make install # will install tools. clang & llc
+
+4. Compile test
+
+cd $(TOPDIR)/nvfc/test/test_br
+make
+sudo make run
+
+5. Firmware compile & install & test
+
+5.1 Firmware compile
+ cd $(TOPDIR)/gdev/fw/
+ make
+ make h # nvc0_ctxctl.h will be copied
+
+5.2. Gdev install
+Gdev is a runtime-unified operating system module that manages GPUs 
+as first-class computing resources.
+For more information, please see the following URL.
+https://github.com/shinpei0208/gdev
+ 
+if you use the we developed firmware, you can use the pscnv.
+
+5.2.1 pscnv driver edit
+ cd $(TOPDIR)/gdev/mod/pscnv
+ $(editor) nvc0_graph.c
+ 
+ Please describe the top of the "nvc0_graph.c" file the following statement.
+ #define USE_BLOB_UCODE
+ 
+
+5.2.2. pscnv install
+ cd $(TOPDIR)/gdev/mod/pscnv
+ ./configure
+ make
+ sudo make modules_install
+ sudo shutdown -r now # will reboot
+
+You must change kernel setting to use the pscnv for GPU device driver.
+This pscnv included the compiled firmware.
+
+5.2.3 Gdev Module
+ cd $(TOPDIR)/gdev/mod
+ mkdir build
+ cd build
+ ../configure
+ make
+ sudo insmod gdev.ko
+ 
+5.2.4 Gdev Library
+ cd $(TOPDIR)/gdev/lib
+ mkdir build
+ cd build
+ ../configure
+ make
+ sudo make install
+ export LD_LIBRARY_PATH="/usr/local/gdev/lib64:$LD_LIBRARY_PATH"
+ export PATH="/usr/local/gdev/bin:$PATH"
+
+5.2.5 CUDA Driver API
+ 
+ cd $(TOPDIR)/gdev/cuda
+ mkdir build
+ cd build
+ ../configure
+ make
+ sudo make install
+
+Gdev also supports CUDA in the operating system. You are required to
+install "kcuda" module to use this functionality.
+
+ cd $(TOPDIR)/gdev/cuda
+ mkdir kbuild
+ ../configure --target=kcuda
+ make
+ sudo make install
+
+5.3 Runs test
+ cd $(TOPDIR)/gdev/test/cuda/user/madd
+ make
+ ./user_test 256
+
+
+File extension
+  - *.c *.h : c source code
+  - *.bc    : LLVM IR
+  - *.s     : Target Code(tmp)
+  - *.tmp   : Target Code after llvm2envyas
+  - *.S     : Target Code (*.tmp + boot.S)
+  - *.bin   : Execution File
+  - *_ctxctl.h : data header file 
+  - nvc0_ctxctl.h : Firmware code header file (by device driver)
